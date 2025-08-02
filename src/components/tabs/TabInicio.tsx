@@ -109,7 +109,7 @@ const TabInicio: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:3000/conteudo", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conteudo`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();

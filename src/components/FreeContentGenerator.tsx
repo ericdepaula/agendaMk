@@ -57,7 +57,7 @@ const FreeContentGenerator: React.FC<FreeContentGeneratorProps> = ({
       }
 
       const response = await fetch(
-        "http://localhost:3000/conteudo/gerar-gratis",
+        `${import.meta.env.VITE_API_BASE_URL}/conteudo/gerar-gratis`,
         {
           method: "POST",
           headers: {

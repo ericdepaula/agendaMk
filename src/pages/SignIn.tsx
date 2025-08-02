@@ -75,7 +75,7 @@ const SignIn = () => {
     setSubmitStatus(null);
 
     try {
-      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/usuarios/login`;
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/usuarios/login`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
