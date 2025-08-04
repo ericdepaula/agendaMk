@@ -210,7 +210,7 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuarios/cadastro`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/usuarios/cadastro`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
