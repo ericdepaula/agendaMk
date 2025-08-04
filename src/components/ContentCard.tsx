@@ -74,7 +74,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ conteudo }) => {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `agenda_conteudo_${conteudo.id}.csv`);
+    link.setAttribute("download", `${analise.tituloEstrategia}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
