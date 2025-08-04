@@ -91,7 +91,7 @@ const ContentCard: React.FC<ContentCardProps> = ({ conteudo }) => {
         </div>
 
         <h2 className="text-xl font-bold text-gray-800 mb-1">
-          {dados.tituloEstrategia || 'Agenda de Conteúdo'}
+          {analise.tituloEstrategia || 'Agenda de Conteúdo'}
         </h2>
 
         <p className="text-sm text-gray-500 mb-4">
