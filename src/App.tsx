@@ -64,10 +64,13 @@ const ForgotPassword = () => (
       </div>
       <div className="bg-white backdrop-blur-sm bg-opacity-95 rounded-2xl shadow-xl p-8 border border-gray-100">
         <p className="text-gray-700 mb-4">
-          In a real application, this would contain a form to reset your password.
+          Em construção... Por enquanto, você pode voltar para a página de login.
+        </p>
+        <p className="text-gray-500 mb-4">
+          Se você esqueceu sua senha, entre em contato com o suporte para assistência.
         </p>
         <a href="/signin" className="text-blue-600 hover:text-blue-800 hover:underline">
-          ← Back to Sign In
+          ← Voltar para Login
         </a>
       </div>
     </div>
@@ -98,7 +101,7 @@ const TermsOfService = () => (
         </div>
         <div className="mt-8 text-center">
           <a href="/signup" className="text-blue-600 hover:text-blue-800 hover:underline">
-            ← Back to Sign Up
+            ← Voltar para Cadastro
           </a>
         </div>
       </div>
@@ -130,7 +133,7 @@ const PrivacyPolicy = () => (
         </div>
         <div className="mt-8 text-center">
           <a href="/signup" className="text-blue-600 hover:text-blue-800 hover:underline">
-            ← Back to Sign Up
+            ← Voltar para Cadastro
           </a>
         </div>
       </div>
