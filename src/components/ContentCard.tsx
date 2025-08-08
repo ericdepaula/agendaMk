@@ -38,7 +38,9 @@ const ContentCard: React.FC<ContentCardProps> = ({ conteudo }) => {
   };
 
   // --- 2. NOVA FUNÇÃO PARA EXPORTAR O CSV ---
-  const handleExport = () => {
+  const handleExport = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
     const { agendaDePostagens } = dados;
     if (!agendaDePostagens) {
       alert("Nenhuma agenda de postagens encontrada para exportar.");
