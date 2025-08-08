@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import TimedSnackbar from '../components/TimedSnackbar'; // Garanta que este caminho está correto
 
-// --- Interfaces (sem alterações) ---
+// --- Tipos para os dados do formulário e estados ---
 interface FormData {
   email: string;
   password: string;
@@ -17,12 +17,13 @@ interface SubmitStatus {
   message: string;
 }
 
-// --- Funções Helper (sem alterações) ---
+// Função para validar o email
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
+// Componente SignIn
 const SignIn = () => {
   // --- Estados do Componente (sem alterações) ---
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
@@ -38,6 +39,7 @@ const SignIn = () => {
     if (data.email && !validateEmail(data.email)) {
       newErrors.email = 'Por favor, insira um email válido';
     }
+    // A validação de "senha em branco" agora é feita no submit.
     if (data.password && data.password.length < 5) {
       newErrors.password = 'Senha deve ter pelo menos 5 caracteres';
     }
@@ -56,7 +58,7 @@ const SignIn = () => {
     if (submitStatus) setSubmitStatus(null);
   };
 
-  // --- Função de Envio (com a correção) ---
+  // --- Função de Envio (com a melhoria de segurança) ---
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -74,32 +76,45 @@ const SignIn = () => {
     setIsLoading(true);
     setSubmitStatus(null);
 
+    // *** MELHORIA DE SEGURANÇA 1: Capturar e limpar a senha ***
+    // Copiamos a senha para uma variável local segura.
+    const passwordToSend = formData.password;
+
+    // Imediatamente limpamos a senha do estado do componente.
+    // Isso remove o valor do DOM enquanto a requisição está em andamento.
+    setFormData(prev => ({ ...prev, password: '' }));
+
     try {
       const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/usuarios/login`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, senha: formData.password }),
+        // Usamos a variável local no corpo da requisição.
+        body: JSON.stringify({ email: formData.email, senha: passwordToSend }),
       });
 
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Credenciais inválidas.');
       }
-
-      // --- A CORREÇÃO ESTÁ AQUI ---
-      // Padronizamos o nome da chave para 'authToken'
       localStorage.setItem('authToken', data.token);
 
       if (data.usuario) {
         localStorage.setItem('userInfo', JSON.stringify(data.usuario));
       }
       setSubmitStatus({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
+      
+      // A navegação ocorre após o sucesso
       navigate('/dashboard');
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro inesperado.';
       setSubmitStatus({ type: 'error', message: errorMessage });
+      // Importante: Não re-preenchemos a senha no estado em caso de erro.
+      // O usuário terá que digitá-la novamente, o que é uma prática de segurança padrão.
+    } finally {
+      // O estado de loading é desativado no final, seja em caso de sucesso ou erro.
+      // A navegação em caso de sucesso já terá ocorrido.
       setIsLoading(false);
     }
   };
@@ -113,7 +128,7 @@ const SignIn = () => {
           <p className="text-gray-600">Entre com sua conta para continuar</p>
         </div>
 
-        {/* Formulário (sem alterações) */}
+        {/* Formulário */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
@@ -127,6 +142,7 @@ const SignIn = () => {
                   className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                     }`}
                   placeholder="Informe seu email"
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -139,6 +155,8 @@ const SignIn = () => {
                 <input
                   type={showPassword ? 'text' : 'password'} id="password" name="password"
                   value={formData.password} onChange={handleInputChange}
+                  // *** MELHORIA DE SEGURANÇA 2: Autocomplete semântico ***
+                  autoComplete="current-password"
                   className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                     }`}
                   placeholder="Informe sua senha"
@@ -179,8 +197,6 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-
-      {/* Snackbar (sem alterações) */}
       <TimedSnackbar
         status={submitStatus}
         onClose={() => setSubmitStatus(null)}
