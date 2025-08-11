@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// 1. Importamos o ícone para o novo campo de telefone
 import { Eye, EyeOff, Mail, Lock, User, Loader2, Check, Phone, AlertCircle } from 'lucide-react';
 import TimedSnackbar from '../components/TimedSnackbar';
 
-// --- ATUALIZAÇÃO 1: Adicionamos 'telefone' às interfaces ---
 interface FormData {
   fullName: string;
   email: string;
@@ -36,7 +34,6 @@ const SignUp = () => {
     confirmPassword: "", agreeToTerms: false, agreeToPrivacy: false,
   });
 
-  // O resto dos seus estados e funções helper continuam os mesmos
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
@@ -50,7 +47,7 @@ const SignUp = () => {
     return emailRegex.test(email);
   };
 
-  // Password strength calculation
+  // Contador de força da senha
   const calculatePasswordStrength = (password: string) => {
     let score = 0;
     let feedback = "";
@@ -84,7 +81,7 @@ const SignUp = () => {
 
     return { score, feedback };
   };
-  // Sua lógica de validação em tempo real, agora com o campo de telefone
+
   const validateField = (name: keyof FormData, value: string | boolean) => {
     const newErrors = { ...errors };
 
@@ -107,7 +104,6 @@ const SignUp = () => {
           delete newErrors.email;
         }
         break;
-      // --- ATUALIZAÇÃO 3: Adicionamos a validação do telefone ---
       case "telefone":
         if (typeof value === "string" && !value.trim()) {
           newErrors.telefone = "Telefone é obrigatório";
@@ -164,20 +160,16 @@ const SignUp = () => {
       [name]: newValue,
     }));
 
-    // Clear submit status when user starts typing
     if (submitStatus) {
       setSubmitStatus(null);
     }
 
-    // Update password strength for password field
     if (name === "password") {
       setPasswordStrength(calculatePasswordStrength(value as string));
     }
 
-    // Validate field in real-time
     validateField(name as keyof FormData, newValue);
 
-    // Re-validate confirm password when password changes
     if (name === "password" && formData.confirmPassword) {
       validateField("confirmPassword", formData.confirmPassword);
     }
@@ -187,7 +179,7 @@ const SignUp = () => {
     e.preventDefault();
     setSubmitStatus(null);
 
-    // Validação final e completa antes do envio
+    // Validação completa antes do envio
     const newErrors: Errors = {};
     if (!formData.fullName.trim()) newErrors.fullName = "Nome é obrigatório";
     if (!formData.email) newErrors.email = "Email é obrigatório";
@@ -201,7 +193,6 @@ const SignUp = () => {
 
     setErrors(newErrors);
 
-    // --- ATUALIZAÇÃO 4: Snackbar como fallback principal ---
     if (Object.keys(newErrors).length > 0) {
       setSubmitStatus({ type: 'error', message: 'Por favor, corrija todos os campos inválidos.' });
       return;
@@ -216,7 +207,7 @@ const SignUp = () => {
         body: JSON.stringify({
           nome: formData.fullName,
           email: formData.email,
-          telefone: formData.telefone, // Enviando o novo campo para o back-end
+          telefone: formData.telefone,
           senha: formData.password,
         }),
       });
@@ -224,7 +215,7 @@ const SignUp = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Ocorreu um erro ao criar a conta.");
 
-      setSubmitStatus({ type: "success", message: "Conta criada com sucesso! Redirecionando..." });
+      setSubmitStatus({ type: "success", message: "Conta criada com sucesso! Redirecionando ao login..." });
       setTimeout(() => navigate("/signin"), 2000);
 
     } catch (error: any) {
@@ -233,7 +224,6 @@ const SignUp = () => {
     }
   };
 
-  // Password strength color and width
   const getPasswordStrengthColor = (score: number) => {
     if (score <= 1) return "bg-red-500";
     if (score <= 2) return "bg-orange-500";
@@ -327,7 +317,6 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* --- ATUALIZAÇÃO 5: Novo campo de Telefone no JSX --- */}
             <div>
               <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
               <div className="relative">
@@ -370,7 +359,7 @@ const SignUp = () => {
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300 hover:border-gray-400"
                     }`}
-                  placeholder="Create a password"
+                  placeholder="Criar senha"
                   aria-describedby={
                     errors.password ? "password-error" : undefined
                   }
@@ -394,7 +383,7 @@ const SignUp = () => {
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-gray-600">
-                      Password strength:
+                      Força da Senha:
                     </span>
                     <span
                       className={`text-sm font-medium ${passwordStrength.score <= 1
