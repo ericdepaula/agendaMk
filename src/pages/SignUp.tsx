@@ -266,7 +266,7 @@ const SignUp = () => {
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300 hover:border-gray-400"
                     }`}
-                  placeholder="Enter your full name"
+                  placeholder="Insira seu nome e sobrenome"
                   aria-describedby={
                     errors.fullName ? "fullName-error" : undefined
                   }
@@ -302,7 +302,7 @@ const SignUp = () => {
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300 hover:border-gray-400"
                     }`}
-                  placeholder="Enter your email"
+                  placeholder="Insira seu email"
                   aria-describedby={errors.email ? "email-error" : undefined}
                 />
               </div>
@@ -359,7 +359,7 @@ const SignUp = () => {
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300 hover:border-gray-400"
                     }`}
-                  placeholder="Criar senha"
+                  placeholder="Insira sua senha"
                   aria-describedby={
                     errors.password ? "password-error" : undefined
                   }
