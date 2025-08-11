@@ -447,7 +447,7 @@ const SignUp = () => {
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300 hover:border-gray-400"
                     }`}
-                  placeholder="Confirm your password"
+                  placeholder="Confirme sua senha"
                   aria-describedby={
                     errors.confirmPassword ? "confirmPassword-error" : undefined
                   }
