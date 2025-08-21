@@ -1,9 +1,8 @@
-import React, { useState, useRef } from 'react'; // 1. Importar o useRef
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Loader2, Phone, AlertCircle } from 'lucide-react';
 import TimedSnackbar from '../components/TimedSnackbar';
 
-// --- ATUALIZAÇÃO 1: Remover senhas da interface do estado ---
 interface FormData {
   fullName: string;
   email: string;
@@ -27,12 +26,9 @@ interface SubmitStatus {
 }
 
 const SignUp = () => {
-  // --- ATUALIZAÇÃO 2: Remover senhas do estado inicial ---
   const [formData, setFormData] = useState<FormData>({
     fullName: "", email: "", telefone: "", agreeToPrivacy: false,
   });
-
-  // --- ATUALIZAÇÃO 3: Criar refs para os campos de senha ---
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
@@ -51,37 +47,22 @@ const SignUp = () => {
   };
 
   const calculatePasswordStrength = (password: string) => {
-    let score = 0;
-    let feedback = "";
+    const rules = [
+      { test: (pwd: string) => pwd.length >= 8 },
+      { test: (pwd: string) => /[a-z]/.test(pwd) },
+      { test: (pwd: string) => /[A-Z]/.test(pwd) },
+      { test: (pwd: string) => /[0-9]/.test(pwd) },
+      { test: (pwd: string) => /[^A-Za-z0-9]/.test(pwd) },
+    ];
 
-    if (password.length >= 8) score += 1;
-    if (/[a-z]/.test(password)) score += 1;
-    if (/[A-Z]/.test(password)) score += 1;
-    if (/[0-9]/.test(password)) score += 1;
-    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    const feedbacks = ["Muito fraca", "Fraca", "Razoável", "Boa", "Forte"];
 
-    switch (score) {
-      case 0:
-      case 1:
-        feedback = "Muito fraca";
-        break;
-      case 2:
-        feedback = "Fraca";
-        break;
-      case 3:
-        feedback = "Razoável";
-        break;
-      case 4:
-        feedback = "Boa";
-        break;
-      case 5:
-        feedback = "Forte";
-        break;
-      default:
-        feedback = "Fraca";
-    }
+    const score = rules.reduce((acc, rule) => acc + (rule.test(password) ? 1 : 0), 0);
 
-    return { score, feedback };
+    return {
+      score,
+      feedback: feedbacks[score - 1] || "Muito fraca",
+    };
   };
 
   // Validação em tempo real para os campos controlados
@@ -158,7 +139,6 @@ const SignUp = () => {
 
   };
 
-  // --- ATUALIZAÇÃO 4: Nova função para lidar com a mudança da senha ---
   // Esta função será chamada pelo `onChange` do input de senha.
   const handlePasswordChange = () => {
     const password = passwordRef.current?.value || '';
@@ -170,7 +150,7 @@ const SignUp = () => {
     e.preventDefault();
     setSubmitStatus(null);
 
-    // --- ATUALIZAÇÃO 5: Capturar valores das senhas a partir das refs ---
+    // --- Captura valores das senhas a partir das refs ---
     const password = passwordRef.current?.value || '';
     const confirmPassword = confirmPasswordRef.current?.value || '';
 
@@ -202,7 +182,7 @@ const SignUp = () => {
           nome: formData.fullName,
           email: formData.email,
           telefone: formData.telefone,
-          senha: password, // Enviar a senha da variável local
+          senha: password,
         }),
       });
 
@@ -216,7 +196,6 @@ const SignUp = () => {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
       setSubmitStatus({ type: "error", message: errorMessage });
     } finally {
-      // Limpa os campos de senha manualmente, independentemente do resultado
       if (passwordRef.current) passwordRef.current.value = "";
       if (confirmPasswordRef.current) confirmPasswordRef.current.value = "";
       setIsLoading(false);
@@ -245,7 +224,7 @@ const SignUp = () => {
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input de Nome (sem alterações) */}
+            {/* Input de Nome */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
               <div className="relative">
@@ -262,7 +241,7 @@ const SignUp = () => {
               </div>
               {errors.fullName && (<p id="fullName-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.fullName} </p>)}
             </div>
-            {/* Input de Email (sem alterações) */}
+            {/* Input de Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Endereço de Email</label>
               <div className="relative">
@@ -280,7 +259,7 @@ const SignUp = () => {
               {errors.email && (<p id="email-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.email} </p>)}
             </div>
 
-            {/* Input de Telefone (sem alterações) */}
+            {/* Input de Telefone */}
             <div>
               <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
               <div className="relative">
@@ -299,7 +278,7 @@ const SignUp = () => {
               {errors.telefone && (<p className="text-sm text-red-600 flex items-center mt-2"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.telefone} </p>)}
             </div>
 
-            {/* --- ATUALIZAÇÃO 6: Input de Senha agora é não controlado --- */}
+            {/* --- Input de Senha não controlado --- */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2"> Senha </label>
               <div className="relative">
@@ -316,7 +295,6 @@ const SignUp = () => {
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label={showPassword ? "Hide password" : "Show password"} > {showPassword ? (<EyeOff className="h-5 w-5" />) : (<Eye className="h-5 w-5" />)} </button>
               </div>
 
-              {/* Indicador de Força da Senha (precisa de um pequeno ajuste para funcionar com ref) */}
               {/* O `onChange` no input de senha irá atualizar este estado */}
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
@@ -331,7 +309,7 @@ const SignUp = () => {
               {errors.password && (<p id="password-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.password} </p>)}
             </div>
 
-            {/* --- ATUALIZAÇÃO 7: Input de Confirmar Senha agora é não controlado --- */}
+            {/* --- Input de Confirmar Senha não controlado --- */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2"> Confirme sua Senha </label>
               <div className="relative">
@@ -349,7 +327,7 @@ const SignUp = () => {
               {errors.confirmPassword && (<p id="confirmPassword-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.confirmPassword} </p>)}
             </div>
 
-            {/* Checkbox de Termos (sem alterações) */}
+            {/* Checkbox de Termos */}
             <div className="space-y-3">
               <div className="flex items-start">
                 <input
@@ -374,6 +352,7 @@ const SignUp = () => {
         </div>
       </div>
 
+      {/** Snackbar para exibir mensagens de sucesso ou erro */}
       <TimedSnackbar
         status={submitStatus}
         onClose={() => setSubmitStatus(null)}
