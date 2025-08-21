@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react'; // 1. Importar o useRef
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Loader2, Check, Phone, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, Phone, AlertCircle } from 'lucide-react';
 import TimedSnackbar from '../components/TimedSnackbar';
 
+// --- ATUALIZAÇÃO 1: Remover senhas da interface do estado ---
 interface FormData {
   fullName: string;
   email: string;
   telefone: string;
-  password: string;
-  confirmPassword: string;
   agreeToPrivacy: boolean;
 }
 
@@ -16,6 +15,7 @@ interface Errors {
   fullName?: string;
   email?: string;
   telefone?: string;
+  // A senha continua aqui para exibirmos os erros
   password?: string;
   confirmPassword?: string;
   agreeToPrivacy?: string;
@@ -27,10 +27,15 @@ interface SubmitStatus {
 }
 
 const SignUp = () => {
+  // --- ATUALIZAÇÃO 2: Remover senhas do estado inicial ---
   const [formData, setFormData] = useState<FormData>({
-    fullName: "", email: "", telefone: "", password: "",
-    confirmPassword: "", agreeToPrivacy: false,
+    fullName: "", email: "", telefone: "", agreeToPrivacy: false,
   });
+
+  // --- ATUALIZAÇÃO 3: Criar refs para os campos de senha ---
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,7 +50,6 @@ const SignUp = () => {
     return emailRegex.test(email);
   };
 
-  // Contador de força da senha
   const calculatePasswordStrength = (password: string) => {
     let score = 0;
     let feedback = "";
@@ -80,6 +84,7 @@ const SignUp = () => {
     return { score, feedback };
   };
 
+  // Validação em tempo real para os campos controlados
   const validateField = (name: keyof FormData, value: string | boolean) => {
     const newErrors = { ...errors };
 
@@ -97,7 +102,7 @@ const SignUp = () => {
         if (typeof value === "string" && !value) {
           newErrors.email = "Email é obrigatório";
         } else if (typeof value === "string" && !validateEmail(value)) {
-          newErrors.email = "Por favor, insira um email válido"; // value is string here
+          newErrors.email = "Por favor, insira um email válido";
         } else {
           delete newErrors.email;
         }
@@ -109,28 +114,9 @@ const SignUp = () => {
           delete newErrors.telefone;
         }
         break;
-      case "password":
-        if (typeof value === "string" && !value) {
-          newErrors.password = "Senha é obrigatória";
-        } else if (typeof value === "string" && value.length < 5) {
-          newErrors.password = "Senha deve ter pelo menos 5 caracteres";
-        } else {
-          delete newErrors.password;
-        }
-        break;
-      case "confirmPassword":
-        if (!value) {
-          newErrors.confirmPassword = "Por favor, confirme sua senha";
-        } else if (value !== formData.password) {
-          newErrors.confirmPassword = "Senhas não correspondem";
-        } else {
-          delete newErrors.confirmPassword;
-        }
-        break;
       case "agreeToPrivacy":
         if (!value) {
-          newErrors.agreeToPrivacy =
-            "Voce deve concordar com a política de privacidade";
+          newErrors.agreeToPrivacy = "Você deve concordar com a política de privacidade";
         } else {
           delete newErrors.agreeToPrivacy;
         }
@@ -143,55 +129,60 @@ const SignUp = () => {
 
   const formatPhoneNumber = (value: string) => {
     if (!value) return ""
-
-    value = value.replace(/\D/g,'')
-    value = value.replace(/(\d{2})(\d)/,"($1) $2")
-    value = value.replace(/(\d)(\d{4})$/,"$1-$2")
+    value = value.replace(/\D/g, '')
+    value = value.replace(/(\d{2})(\d)/, "($1) $2")
+    value = value.replace(/(\d)(\d{4})$/, "$1-$2")
     return value
-}
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     let newValue: string | boolean = type === "checkbox" ? checked : value;
 
     if (name === "telefone") {
-        newValue = formatPhoneNumber(value);
+      newValue = formatPhoneNumber(value);
     }
 
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
+    // As senhas não estão mais no estado, então não precisamos lidar com elas aqui.
+    if (name !== 'password' && name !== 'confirmPassword') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: newValue,
+      }));
+      validateField(name as keyof FormData, newValue);
+    }
 
     if (submitStatus) {
       setSubmitStatus(null);
     }
 
-    if (name === "password") {
-      setPasswordStrength(calculatePasswordStrength(value as string));
-    }
-
-    validateField(name as keyof FormData, newValue);
-
-    if (name === "password" && formData.confirmPassword) {
-      validateField("confirmPassword", formData.confirmPassword);
-    }
   };
+
+  // --- ATUALIZAÇÃO 4: Nova função para lidar com a mudança da senha ---
+  // Esta função será chamada pelo `onChange` do input de senha.
+  const handlePasswordChange = () => {
+    const password = passwordRef.current?.value || '';
+    setPasswordStrength(calculatePasswordStrength(password));
+  }
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitStatus(null);
+
+    // --- ATUALIZAÇÃO 5: Capturar valores das senhas a partir das refs ---
+    const password = passwordRef.current?.value || '';
+    const confirmPassword = confirmPasswordRef.current?.value || '';
 
     // Validação completa antes do envio
     const newErrors: Errors = {};
     if (!formData.fullName.trim()) newErrors.fullName = "Nome é obrigatório";
     if (!formData.email) newErrors.email = "Email é obrigatório";
     else if (!validateEmail(formData.email)) newErrors.email = "Por favor, insira um email válido";
-    if (!formData.telefone.trim()) newErrors.telefone = "Telefone é obrigatório"; // Validação do novo campo
-    if (!formData.password) newErrors.password = "Senha é obrigatória";
-    else if (formData.password.length < 5) newErrors.password = "Senha deve ter pelo menos 5 caracteres"; // Corrigido para 5 para consistência
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "As senhas não correspondem";
+    if (!formData.telefone.trim()) newErrors.telefone = "Telefone é obrigatório";
+    if (!password) newErrors.password = "Senha é obrigatória";
+    else if (password.length < 5) newErrors.password = "Senha deve ter pelo menos 5 caracteres";
+    if (password !== confirmPassword) newErrors.confirmPassword = "As senhas não correspondem";
     if (!formData.agreeToPrivacy) newErrors.agreeToPrivacy = "Você deve concordar com a política de privacidade";
 
     setErrors(newErrors);
@@ -211,7 +202,7 @@ const SignUp = () => {
           nome: formData.fullName,
           email: formData.email,
           telefone: formData.telefone,
-          senha: formData.password,
+          senha: password, // Enviar a senha da variável local
         }),
       });
 
@@ -222,8 +213,12 @@ const SignUp = () => {
       setTimeout(() => navigate("/signin"), 2000);
 
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message: "Ocorreu um erro inesperado.";
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
       setSubmitStatus({ type: "error", message: errorMessage });
+    } finally {
+      // Limpa os campos de senha manualmente, independentemente do resultado
+      if (passwordRef.current) passwordRef.current.value = "";
+      if (confirmPasswordRef.current) confirmPasswordRef.current.value = "";
       setIsLoading(false);
     }
   };
@@ -250,14 +245,9 @@ const SignUp = () => {
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name Input */}
+            {/* Input de Nome (sem alterações) */}
             <div>
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Nome
-              </label>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
@@ -266,34 +256,15 @@ const SignUp = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.fullName
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300 hover:border-gray-400"
-                    }`}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.fullName ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-gray-400"}`}
                   placeholder="Insira seu nome e sobrenome"
-                  aria-describedby={
-                    errors.fullName ? "fullName-error" : undefined
-                  }
                 />
               </div>
-              {errors.fullName && (
-                <p
-                  id="fullName-error"
-                  className="mt-2 text-sm text-red-600 flex items-center"
-                >
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.fullName}
-                </p>
-              )}
+              {errors.fullName && (<p id="fullName-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.fullName} </p>)}
             </div>
-            {/* Email Input */}
+            {/* Input de Email (sem alterações) */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Endereço de Email
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Endereço de Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
@@ -302,25 +273,14 @@ const SignUp = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.email
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300 hover:border-gray-400"
-                    }`}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.email ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-gray-400"}`}
                   placeholder="Insira seu email"
-                  aria-describedby={errors.email ? "email-error" : undefined}
                 />
               </div>
-              {errors.email && (
-                <p
-                  id="email-error"
-                  className="mt-2 text-sm text-red-600 flex items-center"
-                >
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.email}
-                </p>
-              )}
+              {errors.email && (<p id="email-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.email} </p>)}
             </div>
 
+            {/* Input de Telefone (sem alterações) */}
             <div>
               <label htmlFor="telefone" className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
               <div className="relative">
@@ -336,158 +296,60 @@ const SignUp = () => {
                   placeholder="(12) 12345-6789"
                 />
               </div>
-              {errors.telefone && (
-                <p className="text-sm text-red-600 flex items-center mt-2">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.telefone}
-                </p>
-              )}
+              {errors.telefone && (<p className="text-sm text-red-600 flex items-center mt-2"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.telefone} </p>)}
             </div>
 
-            {/* Password Input */}
+            {/* --- ATUALIZAÇÃO 6: Input de Senha agora é não controlado --- */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Senha
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2"> Senha </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.password
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300 hover:border-gray-400"
-                    }`}
+                  ref={passwordRef} // Usar a ref
+                  onChange={handlePasswordChange} // Chamar a nova função para a barra de força
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.password ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-gray-400"}`}
                   placeholder="Insira sua senha"
-                  aria-describedby={
-                    errors.password ? "password-error" : undefined
-                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label={showPassword ? "Hide password" : "Show password"} > {showPassword ? (<EyeOff className="h-5 w-5" />) : (<Eye className="h-5 w-5" />)} </button>
               </div>
 
-              {/* Password Strength Indicator */}
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-600">
-                      Força da Senha:
-                    </span>
-                    <span
-                      className={`text-sm font-medium ${passwordStrength.score <= 1
-                        ? "text-red-600"
-                        : passwordStrength.score <= 2
-                          ? "text-orange-600"
-                          : passwordStrength.score <= 3
-                            ? "text-yellow-600"
-                            : passwordStrength.score <= 4
-                              ? "text-blue-600"
-                              : "text-green-600"
-                        }`}
-                    >
-                      {passwordStrength.feedback}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(
-                        passwordStrength.score
-                      )}`}
-                      style={{
-                        width: getPasswordStrengthWidth(passwordStrength.score),
-                      }}
-                    />
-                  </div>
+              {/* Indicador de Força da Senha (precisa de um pequeno ajuste para funcionar com ref) */}
+              {/* O `onChange` no input de senha irá atualizar este estado */}
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-gray-600">Força da Senha:</span>
+                  <span className={`text-sm font-medium ${passwordStrength.score <= 1 ? "text-red-600" : passwordStrength.score <= 2 ? "text-orange-600" : passwordStrength.score <= 3 ? "text-yellow-600" : passwordStrength.score <= 4 ? "text-blue-600" : "text-green-600"}`}> {passwordStrength.feedback} </span>
                 </div>
-              )}
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength.score)}`} style={{ width: getPasswordStrengthWidth(passwordStrength.score) }} />
+                </div>
+              </div>
 
-              {errors.password && (
-                <p
-                  id="password-error"
-                  className="mt-2 text-sm text-red-600 flex items-center"
-                >
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.password}
-                </p>
-              )}
+              {errors.password && (<p id="password-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.password} </p>)}
             </div>
 
-            {/* Confirm Password Input */}
+            {/* --- ATUALIZAÇÃO 7: Input de Confirmar Senha agora é não controlado --- */}
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Confirme sua Senha
-              </label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2"> Confirme sua Senha </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   id="confirmPassword"
                   name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.confirmPassword
-                    ? "border-red-500 bg-red-50"
-                    : formData.confirmPassword &&
-                      formData.password === formData.confirmPassword
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-300 hover:border-gray-400"
-                    }`}
+                  ref={confirmPasswordRef} // Usar a ref
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.confirmPassword ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-gray-400"}`}
                   placeholder="Confirme sua senha"
-                  aria-describedby={
-                    errors.confirmPassword ? "confirmPassword-error" : undefined
-                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
-                  }
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-                {formData.confirmPassword &&
-                  formData.password === formData.confirmPassword && (
-                    <Check className="absolute right-10 top-3 h-5 w-5 text-green-500" />
-                  )}
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none" aria-label={showConfirmPassword ? "Hide password" : "Show password"}> {showConfirmPassword ? (<EyeOff className="h-5 w-5" />) : (<Eye className="h-5 w-5" />)} </button>
               </div>
-              {errors.confirmPassword && (
-                <p
-                  id="confirmPassword-error"
-                  className="mt-2 text-sm text-red-600 flex items-center"
-                >
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.confirmPassword}
-                </p>
-              )}
+              {errors.confirmPassword && (<p id="confirmPassword-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.confirmPassword} </p>)}
             </div>
 
-            {/* Terms and Privacy Checkboxes */}
+            {/* Checkbox de Termos (sem alterações) */}
             <div className="space-y-3">
               <div className="flex items-start">
                 <input
@@ -498,34 +360,12 @@ const SignUp = () => {
                   onChange={handleInputChange}
                   className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label
-                  htmlFor="agreeToPrivacy"
-                  className="ml-3 text-sm text-gray-700"
-                >
-                  Eu concordo com a{" "}
-                  <Link
-                    to="/privacy"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Politica de Privacidade
-                  </Link>
-                </label>
+                <label htmlFor="agreeToPrivacy" className="ml-3 text-sm text-gray-700"> Eu concordo com a{" "} <Link to="/privacy" className="text-blue-600 hover:text-blue-800 hover:underline"> Politica de Privacidade </Link> </label>
               </div>
-              {errors.agreeToPrivacy && (
-                <p className="text-sm text-red-600 flex items-center ml-7">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.agreeToPrivacy}
-                </p>
-              )}
+              {errors.agreeToPrivacy && (<p className="text-sm text-red-600 flex items-center ml-7"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.agreeToPrivacy} </p>)}
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-            >
-              {isLoading ? (<><Loader2 className="animate-spin h-5 w-5 mr-2" /> Criando conta...</>) : "Criar Conta"}
-            </button>
+            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center" > {isLoading ? (<><Loader2 className="animate-spin h-5 w-5 mr-2" /> Criando conta...</>) : "Criar Conta"} </button>
           </form>
 
           <div className="mt-6 text-center">
@@ -534,7 +374,6 @@ const SignUp = () => {
         </div>
       </div>
 
-      {/* --- ATUALIZAÇÃO 6: Snackbar como único ponto de feedback de SUBMISSÃO --- */}
       <TimedSnackbar
         status={submitStatus}
         onClose={() => setSubmitStatus(null)}
