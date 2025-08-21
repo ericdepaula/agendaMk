@@ -9,7 +9,6 @@ interface FormData {
   telefone: string;
   password: string;
   confirmPassword: string;
-  agreeToTerms: boolean;
   agreeToPrivacy: boolean;
 }
 
@@ -19,7 +18,6 @@ interface Errors {
   telefone?: string;
   password?: string;
   confirmPassword?: string;
-  agreeToTerms?: string;
   agreeToPrivacy?: string;
 }
 
@@ -31,7 +29,7 @@ interface SubmitStatus {
 const SignUp = () => {
   const [formData, setFormData] = useState<FormData>({
     fullName: "", email: "", telefone: "", password: "",
-    confirmPassword: "", agreeToTerms: false, agreeToPrivacy: false,
+    confirmPassword: "", agreeToPrivacy: false,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -129,14 +127,6 @@ const SignUp = () => {
           delete newErrors.confirmPassword;
         }
         break;
-      case "agreeToTerms":
-        if (!value) {
-          newErrors.agreeToTerms =
-            "Voce deve concordar com os termos de serviço";
-        } else {
-          delete newErrors.agreeToTerms;
-        }
-        break;
       case "agreeToPrivacy":
         if (!value) {
           newErrors.agreeToPrivacy =
@@ -151,9 +141,23 @@ const SignUp = () => {
     setErrors(newErrors);
   };
 
+  const formatPhoneNumber = (value: string) => {
+    if (!value) return ""
+
+    value = value.replace(/\D/g,'')
+    value = value.replace(/(\d{2})(\d)/,"($1) $2")
+    value = value.replace(/(\d)(\d{4})$/,"$1-$2")
+    return value
+}
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
+    let newValue: string | boolean = type === "checkbox" ? checked : value;
+
+    if (name === "telefone") {
+        newValue = formatPhoneNumber(value);
+    }
+
 
     setFormData((prev) => ({
       ...prev,
@@ -188,7 +192,6 @@ const SignUp = () => {
     if (!formData.password) newErrors.password = "Senha é obrigatória";
     else if (formData.password.length < 5) newErrors.password = "Senha deve ter pelo menos 5 caracteres"; // Corrigido para 5 para consistência
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "As senhas não correspondem";
-    if (!formData.agreeToTerms) newErrors.agreeToTerms = "Você deve concordar com os termos";
     if (!formData.agreeToPrivacy) newErrors.agreeToPrivacy = "Você deve concordar com a política de privacidade";
 
     setErrors(newErrors);
@@ -218,8 +221,9 @@ const SignUp = () => {
       setSubmitStatus({ type: "success", message: "Conta criada com sucesso! Redirecionando ao login..." });
       setTimeout(() => navigate("/signin"), 2000);
 
-    } catch (error: any) {
-      setSubmitStatus({ type: "error", message: error.message });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message: "Ocorreu um erro inesperado.";
+      setSubmitStatus({ type: "error", message: errorMessage });
       setIsLoading(false);
     }
   };
@@ -327,8 +331,9 @@ const SignUp = () => {
                   name="telefone"
                   value={formData.telefone}
                   onChange={handleInputChange}
+                  maxLength={15}
                   className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.telefone ? "border-red-500 bg-red-50" : "border-gray-300 hover:border-gray-400"}`}
-                  placeholder="(XX) XXXXX-XXXX"
+                  placeholder="(12) 12345-6789"
                 />
               </div>
               {errors.telefone && (
@@ -484,35 +489,6 @@ const SignUp = () => {
 
             {/* Terms and Privacy Checkboxes */}
             <div className="space-y-3">
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  id="agreeToTerms"
-                  name="agreeToTerms"
-                  checked={formData.agreeToTerms}
-                  onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label
-                  htmlFor="agreeToTerms"
-                  className="ml-3 text-sm text-gray-700"
-                >
-                  Eu concordo com os{" "}
-                  <Link
-                    to="/terms"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Termos de Serviço
-                  </Link>
-                </label>
-              </div>
-              {errors.agreeToTerms && (
-                <p className="text-sm text-red-600 flex items-center ml-7">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.agreeToTerms}
-                </p>
-              )}
-
               <div className="flex items-start">
                 <input
                   type="checkbox"
