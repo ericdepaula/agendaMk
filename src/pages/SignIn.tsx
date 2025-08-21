@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import TimedSnackbar from '../components/TimedSnackbar';
 
 // --- Tipos para os dados do formulário e estados ---
@@ -65,9 +65,6 @@ const SignIn = () => {
     const finalErrors = validate(formData);
     if (!formData.email) finalErrors.email = 'Email é obrigatório';
     if (!passwordToSend) finalErrors.password = 'Senha é obrigatória';
-    if (passwordToSend && passwordToSend.length < 5) {
-      finalErrors.password = 'Senha deve ter pelo menos 5 caracteres';
-    }
 
     setErrors(finalErrors);
 
@@ -140,6 +137,7 @@ const SignIn = () => {
                   autoComplete="email"
                 />
               </div>
+              {errors.email && (<p id="email-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.email} </p>)}
             </div>
 
             <div>
@@ -164,6 +162,8 @@ const SignIn = () => {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {errors.password && (<p id="password-error" className="mt-2 text-sm text-red-600 flex items-center"> <AlertCircle className="h-4 w-4 mr-1" /> {errors.password} </p>)}
+
             </div>
 
             <div className="text-right">
