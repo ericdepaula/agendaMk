@@ -65,6 +65,15 @@ const SignUp = () => {
     };
   };
 
+  const getPasswordStrengthColor = (score: number) => {
+    const colors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
+    return colors[Math.min(score - 1, colors.length - 1)];
+  };
+
+  const getPasswordStrengthWidth = (score: number, max = 5) => {
+    return `${(score / max) * 100}%`;
+  };
+
   // Validação em tempo real para os campos controlados
   const validateField = (name: keyof FormData, value: string | boolean) => {
     const newErrors = { ...errors };
@@ -108,21 +117,10 @@ const SignUp = () => {
     setErrors(newErrors);
   };
 
-  const formatPhoneNumber = (value: string) => {
-    if (!value) return ""
-    value = value.replace(/\D/g, '')
-    value = value.replace(/(\d{2})(\d)/, "($1) $2")
-    value = value.replace(/(\d)(\d{4})$/, "$1-$2")
-    return value
-  }
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    let newValue: string | boolean = type === "checkbox" ? checked : value;
+    const newValue: string | boolean = type === "checkbox" ? checked : value;
 
-    if (name === "telefone") {
-      newValue = formatPhoneNumber(value);
-    }
 
     // As senhas não estão mais no estado, então não precisamos lidar com elas aqui.
     if (name !== 'password' && name !== 'confirmPassword') {
@@ -200,18 +198,6 @@ const SignUp = () => {
       if (confirmPasswordRef.current) confirmPasswordRef.current.value = "";
       setIsLoading(false);
     }
-  };
-
-  const getPasswordStrengthColor = (score: number) => {
-    if (score <= 1) return "bg-red-500";
-    if (score <= 2) return "bg-orange-500";
-    if (score <= 3) return "bg-yellow-500";
-    if (score <= 4) return "bg-blue-500";
-    return "bg-green-500";
-  };
-
-  const getPasswordStrengthWidth = (score: number) => {
-    return `${(score / 5) * 100}%`;
   };
 
   return (
