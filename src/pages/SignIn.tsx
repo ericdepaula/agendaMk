@@ -1,12 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
-import TimedSnackbar from '../components/TimedSnackbar'; // Garanta que este caminho está correto
+import TimedSnackbar from '../components/TimedSnackbar';
 
 // --- Tipos para os dados do formulário e estados ---
 interface FormData {
   email: string;
-  password: string;
 }
 interface Errors {
   email?: string;
@@ -25,23 +24,22 @@ const validateEmail = (email: string): boolean => {
 
 // Componente SignIn
 const SignIn = () => {
-  // --- Estados do Componente (sem alterações) ---
-  const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
+  const [formData, setFormData] = useState<FormData>({ email: '' });
+  // --- MELHORIA 1: Usar useRef para a senha ---
+  // A ref nos dará acesso direto ao input sem precisar de um estado.
+  const passwordRef = useRef<HTMLInputElement>(null);
+
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus | null>(null);
   const navigate = useNavigate();
 
-  // --- Lógica de Validação (sem alterações) ---
+  // A validação agora foca no que está no estado (apenas o email)
   const validate = useCallback((data: FormData) => {
     const newErrors: Errors = {};
     if (data.email && !validateEmail(data.email)) {
       newErrors.email = 'Por favor, insira um email válido';
-    }
-    // A validação de "senha em branco" agora é feita no submit.
-    if (data.password && data.password.length < 5) {
-      newErrors.password = 'Senha deve ter pelo menos 5 caracteres';
     }
     return newErrors;
   }, []);
@@ -51,20 +49,25 @@ const SignIn = () => {
     setErrors(validationErrors);
   }, [formData, validate]);
 
-  // --- Funções de Manipulação (Handlers) (sem alterações) ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // O input de senha não vai mais chamar esta função
     setFormData(prev => ({ ...prev, [name]: value }));
     if (submitStatus) setSubmitStatus(null);
   };
 
-  // --- Função de Envio (com a melhoria de segurança) ---
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // --- MELHORIA 2: Capturar a senha diretamente da ref ---
+    const passwordToSend = passwordRef.current?.value || '';
+
     const finalErrors = validate(formData);
     if (!formData.email) finalErrors.email = 'Email é obrigatório';
-    if (!formData.password) finalErrors.password = 'Senha é obrigatória';
+    if (!passwordToSend) finalErrors.password = 'Senha é obrigatória';
+    if (passwordToSend && passwordToSend.length < 5) {
+      finalErrors.password = 'Senha deve ter pelo menos 5 caracteres';
+    }
 
     setErrors(finalErrors);
 
@@ -76,20 +79,11 @@ const SignIn = () => {
     setIsLoading(true);
     setSubmitStatus(null);
 
-    // *** MELHORIA DE SEGURANÇA 1: Capturar e limpar a senha ***
-    // Copiamos a senha para uma variável local segura.
-    const passwordToSend = formData.password;
-
-    // Imediatamente limpamos a senha do estado do componente.
-    // Isso remove o valor do DOM enquanto a requisição está em andamento.
-    setFormData(prev => ({ ...prev, password: '' }));
-
     try {
       const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/usuarios/login`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Usamos a variável local no corpo da requisição.
         body: JSON.stringify({ email: formData.email, senha: passwordToSend }),
       });
 
@@ -103,18 +97,22 @@ const SignIn = () => {
         localStorage.setItem('userInfo', JSON.stringify(data.usuario));
       }
       setSubmitStatus({ type: 'success', message: 'Login realizado com sucesso! Redirecionando...' });
-      
-      // A navegação ocorre após o sucesso
+
+      // Limpa o campo de senha manualmente após o sucesso
+      if (passwordRef.current) {
+        passwordRef.current.value = '';
+      }
+
       navigate('/dashboard');
 
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Ocorreu um erro inesperado.';
       setSubmitStatus({ type: 'error', message: errorMessage });
-      // Importante: Não re-preenchemos a senha no estado em caso de erro.
-      // O usuário terá que digitá-la novamente, o que é uma prática de segurança padrão.
+      // Limpa o campo de senha manualmente em caso de erro
+      if (passwordRef.current) {
+        passwordRef.current.value = '';
+      }
     } finally {
-      // O estado de loading é desativado no final, seja em caso de sucesso ou erro.
-      // A navegação em caso de sucesso já terá ocorrido.
       setIsLoading(false);
     }
   };
@@ -122,16 +120,13 @@ const SignIn = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem vindos!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem vindo!</h1>
           <p className="text-gray-600">Entre com sua conta para continuar</p>
         </div>
 
-        {/* Formulário */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <div className="relative">
@@ -147,15 +142,14 @@ const SignIn = () => {
               </div>
             </div>
 
-            {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                {/* --- MELHORIA 3: Remover 'value' e 'onChange', adicionar 'ref' --- */}
                 <input
                   type={showPassword ? 'text' : 'password'} id="password" name="password"
-                  value={formData.password} onChange={handleInputChange}
-                  // *** MELHORIA DE SEGURANÇA 2: Autocomplete semântico ***
+                  ref={passwordRef}
                   autoComplete="current-password"
                   className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                     }`}
