@@ -25,7 +25,7 @@ function App() {
       <div className="App">
         <Routes>
           {/* Redireciona a rota raiz para a página de login */}
-          <Route path="/" element={<Navigate to="/signin" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           {/* Rotas de Autenticação (públicas) */}
           <Route path="/signin" element={<SignIn />} />

@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 import TimedSnackbar from "./TimedSnackbar";
-// 1. Importamos nosso formulário reutilizável
 import ContentForm from "./ContentForm";
+import Modal from "./Modal"; // Usaremos nosso componente de Modal existente
+import EmbeddedCheckout from "./EmbeddedCheckout"; // Importamos o novo componente de checkout
 
-const PaidContentForm: React.FC = () => {
-  // Toda a sua lógica de estados e de chamada da API permanece aqui, no componente "inteligente".
+interface PaidContentFormProps {
+  onGenerationSuccess: () => void;
+}
+
+const PaidContentForm: React.FC<PaidContentFormProps> = ({ onGenerationSuccess }) => {
   const [formData, setFormData] = useState({
     setor: "",
     tipoNegocio: "",
@@ -16,6 +20,10 @@ const PaidContentForm: React.FC = () => {
   type SubmitStatus = { type: "error" | "success"; message: string } | null;
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>(null);
 
+  // Estados para controlar o modal e o clientSecret
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -25,16 +33,12 @@ const PaidContentForm: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setSubmitStatus(null);
+    setClientSecret(null);
 
-    if (
-      !formData.setor ||
-      !formData.tipoNegocio ||
-      !formData.objetivoPrincipal ||
-      !priceId
-    ) {
+    if (!priceId) {
       setSubmitStatus({
         type: "error",
-        message: "Por favor, preencha todos os campos e selecione um plano.",
+        message: "Por favor, selecione um plano.",
       });
       setIsLoading(false);
       return;
@@ -43,9 +47,6 @@ const PaidContentForm: React.FC = () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const token = localStorage.getItem("authToken");
-      if (!userInfo.id || !token) {
-        throw new Error("Autenticação não encontrada. Faça o login novamente.");
-      }
 
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/api/pagamentos/checkout`,
@@ -56,7 +57,7 @@ const PaidContentForm: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            priceId: priceId,
+            priceId,
             usuarioId: userInfo.id,
             promptData: formData,
           }),
@@ -64,18 +65,23 @@ const PaidContentForm: React.FC = () => {
       );
 
       const data = await response.json();
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(data.message || "Falha ao iniciar o pagamento.");
-      }
-      window.location.href = data.checkoutUrl;
+
+      setClientSecret(data.clientSecret); // Salvamos o clientSecret
+      setIsModalOpen(true); // Abrimos o modal
     } catch (err: unknown) {
       let errorMessage = "Ocorreu um erro.";
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      }
+      if (err instanceof Error) errorMessage = err.message;
       setSubmitStatus({ type: "error", message: errorMessage });
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsModalOpen(false); // Fecha o modal de pagamento
+    onGenerationSuccess();  // Chama a função do componente pai para atualizar a lista
   };
 
   return (
@@ -86,23 +92,18 @@ const PaidContentForm: React.FC = () => {
             Gerar Mais Conteúdo
           </h2>
           <p className="text-gray-600 mb-6">
-            Selecione um dos nossos planos pagos para continuar criando
-            estratégias de conteúdo incríveis.
+            Selecione um plano para criar estratégias de conteúdo incríveis.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* --- 2. A MUDANÇA PRINCIPAL ACONTECE AQUI --- */}
-          {/* Substituímos os 3 inputs repetidos pelo nosso componente reutilizável. */}
           <ContentForm formData={formData} onFormChange={handleInputChange} />
-
-          {/* A seleção de planos continua aqui, pois é específica deste formulário. */}
+          {/* ... Lógica dos botões de plano ... */}
           <div className="border-t pt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Selecione a quantidade de dias:
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Lembre-se de substituir pelos seus IDs de Preço reais! */}
               <label
                 className={`block p-4 border rounded-lg cursor-pointer text-center ${
                   priceId === "price_1RkvTvPphAIQfHkyLv2HNYci"
@@ -153,7 +154,6 @@ const PaidContentForm: React.FC = () => {
               </label>
             </div>
           </div>
-
           <button
             type="submit"
             disabled={isLoading}
@@ -161,8 +161,7 @@ const PaidContentForm: React.FC = () => {
           >
             {isLoading ? (
               <>
-                <Loader2 className="animate-spin h-5 w-5 mr-2" /> Redirecionando
-                para Pagamento...
+                <Loader2 className="animate-spin h-5 w-5 mr-2" /> Carregando...
               </>
             ) : (
               "Comprar e Gerar Conteúdo"
@@ -175,6 +174,19 @@ const PaidContentForm: React.FC = () => {
         status={submitStatus}
         onClose={() => setSubmitStatus(null)}
       />
+
+      {/* Modal que abre com o formulário de pagamento */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <div className="h-[600px] w-full">
+          {/* 3. Passe a nova função para o EmbeddedCheckout */}
+          {clientSecret && (
+            <EmbeddedCheckout
+              clientSecret={clientSecret}
+              onPaymentSuccess={handlePaymentSuccess}
+            />
+          )}
+        </div>
+      </Modal>
     </>
   );
 };

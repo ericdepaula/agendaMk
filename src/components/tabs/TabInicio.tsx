@@ -42,7 +42,7 @@ const DetalhesConteudo: React.FC<{ conteudo: Conteudo }> = ({ conteudo }) => {
     );
   }
 
-  const { analiseEstrategica, agendaDePostagens} = dados;
+  const { analiseEstrategica, agendaDePostagens } = dados;
 
   return (
     <div className="space-y-6">
@@ -109,9 +109,12 @@ const TabInicio: React.FC = () => {
       return;
     }
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/conteudo`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/conteudo`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       setConteudos(data);
@@ -231,7 +234,8 @@ const TabInicio: React.FC = () => {
         onClose={() => setIsGeneratorModalOpen(false)}
       >
         {hasUsedFreeContent ? (
-          <PaidContentForm />
+          // ADICIONE A PROP onGenerationSuccess AQUI
+          <PaidContentForm onGenerationSuccess={handleGenerationSuccess} />
         ) : (
           <FreeContentGenerator onGenerationSuccess={handleGenerationSuccess} />
         )}
